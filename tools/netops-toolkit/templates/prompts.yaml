@@ -1,0 +1,179 @@
+# Eirdom NetOps Toolkit — Claude Prompt Templates
+# Each template is used by ai_documenter.py to generate a specific report section.
+
+system_prompt: |
+  You are a senior network engineer documenting a home lab infrastructure.
+  The network is built on Ubiquiti UniFi hardware with a UDM-Pro-Max gateway,
+  two USW-Pro-48-PoE switches, and multiple access points. The environment
+  includes Active Directory (ad.eirdom.homes), a two-tier PKI, Docker services
+  behind a Cloudflare Tunnel, and security monitoring with Wazuh and Security Onion.
+
+  Write clear, professional documentation in Markdown. Include tables where
+  appropriate. Flag any issues, misconfigurations, or recommendations you spot
+  in the data. Use the network context provided to enrich device names and
+  VLAN descriptions beyond what the raw API data shows.
+
+templates:
+  device_inventory:
+    name: "Device Inventory & Topology"
+    prompt: |
+      Generate a comprehensive device inventory document from this UniFi API data.
+
+      Include:
+      1. A summary table of all adopted UniFi devices (name, model, MAC, IP,
+          firmware version, uptime, status)
+      2. Switch port utilization summary (used vs total ports per switch)
+      3. Access point coverage summary (connected clients, channel, transmit power)
+      4. Any devices in "disconnected" or "pending adoption" state (flag as issues)
+      5. Firmware version comparison — note any devices behind the latest version
+      6. Uplink topology (which device connects to which, on what port)
+
+      Network context:
+      {network_context}
+
+      Raw device data:
+      ```json
+      {device_data}
+      ```
+
+  network_map:
+    name: "VLAN & Subnet Map"
+    prompt: |
+      Generate a VLAN and subnet documentation from this UniFi network configuration data.
+
+      Include:
+      1. A table of all VLANs/networks: VLAN ID, name, subnet, gateway, DHCP range,
+          DNS servers, domain name, purpose
+      2. DHCP scope utilization if available (leases used vs available)
+      3. Any overlapping subnets or misconfigurations
+      4. Corporate vs IoT vs Guest isolation assessment
+      5. DNS configuration per network
+
+      Network context:
+      {network_context}
+
+      Raw network config data:
+      ```json
+      {network_data}
+      ```
+
+  firewall_audit:
+    name: "Firewall Rule Audit"
+    prompt: |
+      Generate a firewall rule audit document from this UniFi firewall configuration.
+
+      Include:
+      1. A numbered table of all firewall rules: direction (LAN-in, LAN-out, WAN-in,
+          WAN-out, etc.), source, destination, protocol/port, action, description
+      2. Evaluate inter-VLAN isolation:
+          - Can IoT (VLAN 20) reach Corporate (VLAN 10)? Should be BLOCKED.
+          - Can Guest (VLAN 30) reach any RFC1918? Should be BLOCKED.
+          - Can Cameras (VLAN 40) reach anything except UDM NVR? Should be BLOCKED.
+          - Can Docker (VLAN 50) reach Corporate except DNS? Should be BLOCKED.
+          - Can Security (VLAN 60) reach all VLANs? Should be ALLOWED.
+      3. WAN inbound rules — confirm ZERO port forwards exist
+      4. Any rules that are overly permissive or redundant
+      5. Recommendations for hardening
+
+      Network context:
+      {network_context}
+
+      Raw firewall data:
+      ```json
+      {firewall_data}
+      ```
+
+  wireless_report:
+    name: "Wireless Network Report"
+    prompt: |
+      Generate a wireless network report from this UniFi WLAN and AP data.
+
+      Include:
+      1. Table of all SSIDs: name, security mode (WPA2/WPA3/Enterprise), VLAN,
+          band (2.4/5/6), hidden, guest policies
+      2. AP-by-AP summary: name, location (if set), model, channel, transmit power,
+          client count, utilization, satisfaction score
+      3. 802.1X / RADIUS configuration status (Eirdom uses NPS for WPA3-Enterprise)
+      4. Channel overlap analysis if multiple APs share channels
+      5. Any APs with high interference or low satisfaction scores
+      6. Recommendations for optimization
+
+      Network context:
+      {network_context}
+
+      Raw WLAN config data:
+      ```json
+      {wlan_data}
+      ```
+
+      Raw AP status data:
+      ```json
+      {ap_data}
+      ```
+
+  client_inventory:
+    name: "Connected Client Inventory"
+    prompt: |
+      Generate a client inventory from this UniFi client data.
+
+      Include:
+      1. Summary: total clients, breakdown by wired vs wireless, by VLAN
+      2. Table of all clients: hostname/alias, MAC, IP, VLAN/network, connection type
+          (wired/wireless), AP or switch port, RSSI/signal (if wireless), uptime
+      3. Group clients by VLAN for readability
+      4. Flag any clients on unexpected VLANs (e.g., an IoT device on Corporate)
+      5. Flag any clients with very poor wireless signal (RSSI < -75 dBm)
+      6. Identify any unknown/unaliased devices that may need attention
+
+      Network context:
+      {network_context}
+
+      Raw client data:
+      ```json
+      {client_data}
+      ```
+
+  port_profile_map:
+    name: "Switch Port Profile Map"
+    prompt: |
+      Generate a switch port assignment document from this UniFi switch/port data.
+
+      Include:
+      1. Per-switch table: port number, port profile/VLAN, PoE status (on/off, watts),
+          link speed, connected device (via LLDP or client data), STP state
+      2. Trunk/uplink ports identified
+      3. Unused ports identified
+      4. PoE budget utilization per switch
+      5. Any port errors or high utilization alerts
+
+      Network context:
+      {network_context}
+
+      Raw port/switch data:
+      ```json
+      {port_data}
+      ```
+
+  change_diff:
+    name: "Configuration Change Report"
+    prompt: |
+      Generate a change report comparing these two network snapshots.
+
+      Highlight:
+      1. New devices added or removed
+      2. Network/VLAN configuration changes
+      3. Firewall rule additions, removals, or modifications
+      4. SSID or wireless configuration changes
+      5. Client population changes (significant new devices, disappeared devices)
+      6. Firmware version changes
+      7. Any changes that may introduce security risks
+
+      Previous snapshot ({old_timestamp}):
+      ```json
+      {old_snapshot}
+      ```
+
+      Current snapshot ({new_timestamp}):
+      ```json
+      {new_snapshot}
+      ```

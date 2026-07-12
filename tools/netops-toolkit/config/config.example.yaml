@@ -1,0 +1,44 @@
+# Eirdom NetOps Toolkit Configuration
+# Copy to config.yaml and update values. Secrets use ${ENV_VAR} syntax.
+
+unifi:
+  controller_url: "https://10.1.1.1"       # UDM-Pro-Max management IP
+  username: "eirdom-netops"                 # Dedicated read-only local admin
+  password: "${UNIFI_PASSWORD}"             # Resolved from environment variable
+  site: "default"                           # UniFi site name (usually "default")
+  verify_ssl: false                         # Set true if using a valid cert
+  is_udm: true                              # true for UDM/UDM-Pro/UDM-SE, false for legacy controller
+
+claude:
+  api_key: "${ANTHROPIC_API_KEY}"           # Resolved from environment variable
+  model: "claude-sonnet-4-20250514"         # Model to use for doc generation
+  max_tokens: 8192                          # Max output tokens per API call
+
+output:
+  snapshot_dir: "output/snapshots"
+  report_dir: "output/reports"
+  format: "markdown"                        # markdown | docx (future)
+
+# Network context injected into AI prompts for richer documentation
+network_context:
+  domain: "ad.eirdom.homes"
+  public_domain: "eirdom.homes"
+  location: "Higgins Manor — Austin, MN"
+  vlans:
+    1:  "Management (switches, APs, UDM)"
+    10: "Corporate / AD / Servers"
+    20: "IoT Devices"
+    30: "Guest Network"
+    40: "Cameras (Protect only)"
+    50: "Docker Services (Media + Web + Tunnel)"
+    60: "Security Monitoring"
+  key_hosts:
+    "10.1.1.1":  "UDM-Pro-Max (Gateway/Firewall/NVR)"
+    "10.1.1.2":  "USW-Pro-48-PoE (Core Switch)"
+    "10.1.1.3":  "USW-Pro-48-PoE (Distribution Switch)"
+    "10.1.10.5": "EIRDOM-PVE-01 (Proxmox Host)"
+    "10.1.10.10": "EIRDOM-DC-01 (AD Domain Controller)"
+    "10.1.10.12": "EIRDOM-SUB-01 (Subordinate CA)"
+    "10.1.50.10": "EIRDOM-DOCKER-01 (Docker Host)"
+    "10.1.60.10": "EIRDOM-WAZUH-01 (Wazuh Manager)"
+    "10.1.60.20": "EIRDOM-SONION-01 (Security Onion)"
